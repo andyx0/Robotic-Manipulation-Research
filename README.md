@@ -1,4 +1,4 @@
-# Robotic Manipulation of Many Objects with Multiple Layers
+# Robotic Manipulation with Multiple Layers of Many Objects
 
 ## Dependencies
 * [Python](https://www.python.org/)
