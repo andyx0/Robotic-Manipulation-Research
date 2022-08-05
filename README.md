@@ -1,4 +1,4 @@
-# Tabletop Object Rearrangement with Overhand Grasps (TORO) with Multiple Layers of Objects
+# Robotic Manipulation of Many Objects with Multiple Layers
 
 ## Dependencies
 * [Python](https://www.python.org/)
