@@ -52,13 +52,16 @@ def optimal_sequence(Digraph):
         if len(SCC_list) > 1:
             print("SCC (" + str(len(SCC_list)) + "): " + str(SCC_list))
             new_Graph = Digraph.subgraph(SCC_list).copy()  # construct the strongly connected component
-            mfvs = ILP_MFVS(new_Graph)
+            mfvs, layer_independent_nodes = ILP_MFVS(new_Graph, layer_graph.subgraph(SCC_list))
             show_digraph(new_Graph, "Strongly Connected Component")
             # subgraph of only weighted edges
             mfvs_graph = layer_graph.subgraph(mfvs)
             mfvs = list(reversed(list(nx.topological_sort(mfvs_graph))))
             for v in mfvs:
-                action_sequence.append((v, 'b'))
+                if v in layer_independent_nodes:
+                    action_sequence.append((v, 'b'))
+                else:
+                    action_sequence.append((v, 'g'))
                 new_Graph.remove_node(v)
             if nx.is_directed_acyclic_graph(new_Graph):
                 rev_list = list(reversed(list(nx.topological_sort(new_Graph))))
@@ -68,19 +71,23 @@ def optimal_sequence(Digraph):
             else:
                 print("Not a DAG!")
             for v in mfvs:
-                action_sequence.append((v, 'g'))
+                if v in layer_independent_nodes:
+                    action_sequence.append((v, 'g'))
     return action_sequence
 
 
-def ILP_MFVS(subgraph):
+def ILP_MFVS(subgraph, layer_graph):
     env = grb.Env(empty=True)
     env.setParam("OutputFlag", 0)
     env.start()
     model = grb.Model("mip1", env=env)
+    layer_independent_nodes = set()
     for x in subgraph.nodes:
         model.addVar(vtype=grb.GRB.BINARY, name=str(x))
+        if subgraph.out_degree(x) > layer_graph.out_degree(x) or subgraph.in_degree(x) > layer_graph.in_degree(x):
+            layer_independent_nodes.add(x)
     model.update()
-    model.setObjective(grb.quicksum(model.getVars()), grb.GRB.MAXIMIZE)
+    model.setObjective(grb.quicksum(model.getVarByName(str(graphNode)) for graphNode in layer_independent_nodes), grb.GRB.MAXIMIZE)
     for cycle in nx.simple_cycles(subgraph):
         model.addConstr((grb.quicksum(model.getVarByName(str(graphNode)) for graphNode in cycle)) <= len(cycle) - 1)
     edges = subgraph.edges(data='layer')
@@ -97,7 +104,7 @@ def ILP_MFVS(subgraph):
         if not v.x:
             mfvs.add(int(v.varName))
     print("Gurobi ILP MFVS: " + str(mfvs))
-    return mfvs
+    return mfvs, layer_independent_nodes
 
 
 def show_digraph(Digraph, window_title=''):
@@ -175,4 +182,4 @@ if __name__ == '__main__':
     # Labeled_Experiment(graph_2_5, 30, 0.4)
     # Labeled_Experiment(graph_3, 30, 0.4)
     # Labeled_Experiment(graph_4, 30, 0.4)
-    Labeled_Experiment(graph_6, 120, 0.4, layers=2)
+    Labeled_Experiment(graph_4_5, 120, 0.4, layers=2)
