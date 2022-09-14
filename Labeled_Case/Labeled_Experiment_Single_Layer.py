@@ -34,7 +34,6 @@ def Labeled_Experiment(numObjs, Density, Height=1000, Width=1000):
 
 def optimal_sequence(Digraph):
     action_sequence = []
-    buffer_sequence = []
     show_digraph(Digraph, "Original Graph")
 
     # Use Tarjan's SCC decomposition algo to find SCCs in reverse topological order
@@ -53,13 +52,11 @@ def optimal_sequence(Digraph):
             for v in mfvs:
                 action_sequence.append((v, 'b'))
                 new_Graph.remove_node(v)
-            if nx.is_directed_acyclic_graph(new_Graph):
-                rev_list = list(reversed(list(nx.topological_sort(new_Graph))))
-                print("Reverse Topological (without MFVS): " + str(rev_list))
-                for item in rev_list:
-                    action_sequence.append((item, 'g'))
-            else:
-                print("Not a DAG!")
+            assert(nx.is_directed_acyclic_graph(new_Graph))
+            rev_list = list(reversed(list(nx.topological_sort(new_Graph))))
+            print("Reverse Topological (without MFVS): " + str(rev_list))
+            for item in rev_list:
+                action_sequence.append((item, 'g'))
             for v in mfvs:
                 action_sequence.append((v, 'g'))
     return action_sequence

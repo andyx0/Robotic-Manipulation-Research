@@ -63,13 +63,11 @@ def optimal_sequence(Digraph):
                 else:
                     action_sequence.append((v, 'g'))
                 new_Graph.remove_node(v)
-            if nx.is_directed_acyclic_graph(new_Graph):
-                rev_list = list(reversed(list(nx.topological_sort(new_Graph))))
-                print("Reverse Topological (without MFVS): " + str(rev_list))
-                for item in rev_list:
-                    action_sequence.append((item, 'g'))
-            else:
-                print("Not a DAG!")
+            assert(nx.is_directed_acyclic_graph(new_Graph))
+            rev_list = list(reversed(list(nx.topological_sort(new_Graph))))
+            print("Reverse Topological (without MFVS): " + str(rev_list))
+            for item in rev_list:
+                action_sequence.append((item, 'g'))
             for v in mfvs:
                 if v in layer_independent_nodes:
                     action_sequence.append((v, 'g'))
@@ -96,6 +94,7 @@ def ILP_MFVS(subgraph, layer_graph):
         if is_layer_edge:
             sourceNode = str(edge[0])
             targetNode = str(edge[1])
+            # targetNode must be moved before sourceNode moves
             model.addConstr(model.getVarByName(sourceNode) >= model.getVarByName(targetNode))
 
     model.optimize()
