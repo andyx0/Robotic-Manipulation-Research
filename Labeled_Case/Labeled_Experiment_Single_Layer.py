@@ -7,7 +7,7 @@ from itertools import combinations
 import gurobipy as grb
 from Labeled_Experiment_Multi_Layer import show_digraph
 
-def Labeled_Experiment(numObjs, Density, Height=1000, Width=1000):
+def Labeled_Experiment(numObjs, Density, Height=1000, Width=1000, verbose=False):
     '''
     Args:
     numObjs: number of objects in this problem
@@ -23,7 +23,7 @@ def Labeled_Experiment(numObjs, Density, Height=1000, Width=1000):
     # Generate the dependency graph
     Digraph = construct_DG(start_arr, goal_arr, RAD)
     nx_graph = nx.DiGraph(Digraph)
-    action_sequence = optimal_sequence(nx_graph)
+    action_sequence = optimal_sequence(nx_graph, verbose)
     for action in action_sequence:
         print(action)
     # show_Digraph(nx_graph, "Final Graph")
@@ -32,9 +32,10 @@ def Labeled_Experiment(numObjs, Density, Height=1000, Width=1000):
     show_arrangement(numObjs, Density, start_arr, goal_arr)
 
 
-def optimal_sequence(Digraph):
+def optimal_sequence(Digraph, verbose):
     action_sequence = []
-    show_digraph(Digraph, "Original Graph")
+    if verbose:
+        show_digraph(Digraph, "Original Graph")
 
     # Use Tarjan's SCC decomposition algo to find SCCs in reverse topological order
     partition = nx.strongly_connected_components(Digraph)
@@ -48,13 +49,15 @@ def optimal_sequence(Digraph):
             # construct the strongly connected component
             new_Graph = Digraph.subgraph(SCC).copy()
             mfvs = ILP_MFVS(new_Graph)
-            show_digraph(new_Graph, "Strongly Connected Component")
+            if verbose:
+                show_digraph(new_Graph, "Strongly Connected Component")
             for v in mfvs:
                 action_sequence.append((v, 'b'))
                 new_Graph.remove_node(v)
             assert(nx.is_directed_acyclic_graph(new_Graph))
             rev_list = list(reversed(list(nx.topological_sort(new_Graph))))
-            print("Reverse Topological (without MFVS): " + str(rev_list))
+            if verbose:
+                print("Reverse Topological (without MFVS): " + str(rev_list))
             for item in rev_list:
                 action_sequence.append((item, 'g'))
             for v in mfvs:

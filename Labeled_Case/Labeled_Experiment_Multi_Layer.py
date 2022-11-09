@@ -7,12 +7,13 @@ import matplotlib.pyplot as plt
 import gurobipy as grb
 
 
-def Labeled_Experiment(nx_graph, numObjs, Density, Height=1000, Width=1000, layers=1):
+def Labeled_Experiment(nx_graph, numObjs, Density, Height=1000, Width=1000, layers=1, verbose=False):
     '''
     Args:
     numObjs: number of objects in this problem
     Density: S(occupied area)/S(environment)
     Height, Width: Environment size
+    layers: number of layers in this problem
     '''
     # disc radius
     RAD = math.sqrt((Height*Width*Density)/(math.pi*numObjs))
@@ -23,7 +24,7 @@ def Labeled_Experiment(nx_graph, numObjs, Density, Height=1000, Width=1000, laye
     # Generate the dependency graph
     Digraph = construct_DG(start_arr, goal_arr, RAD, layers)
     nx_graph = nx.DiGraph(Digraph)
-    action_sequence = optimal_sequence(nx_graph)
+    action_sequence = optimal_sequence(nx_graph, verbose)
     for action in action_sequence:
         print(action)
     # show_Digraph(nx_graph, "Final Graph")
@@ -32,15 +33,17 @@ def Labeled_Experiment(nx_graph, numObjs, Density, Height=1000, Width=1000, laye
     show_arrangement(numObjs, Density, start_arr, goal_arr)
 
 
-def optimal_sequence(Digraph):
+def optimal_sequence(Digraph, verbose):
     action_sequence = []
-    show_digraph(Digraph, "Original Graph")
+    if verbose:
+        show_digraph(Digraph, "Original Graph")
     edges = Digraph.edges(data=True)
     layer_edges = list(x for x in edges if 'layer' in x[-1])
     layer_graph = nx.DiGraph()
     layer_graph.add_nodes_from(Digraph)
     layer_graph.add_edges_from(layer_edges)
-    show_digraph(layer_graph, "Layer Graph")
+    if verbose:
+        show_digraph(layer_graph, "Layer Graph")
 
     # Use Tarjan's SCC decomposition algo to find SCCs in reverse topological order
     partition = list(nx.strongly_connected_components(Digraph))
@@ -53,7 +56,8 @@ def optimal_sequence(Digraph):
             print("SCC (" + str(len(SCC_list)) + "): " + str(SCC_list))
             new_Graph = Digraph.subgraph(SCC_list).copy()  # construct the strongly connected component
             mfvs, layer_independent_nodes = ILP_MFVS(new_Graph, layer_graph.subgraph(SCC_list))
-            show_digraph(new_Graph, "Strongly Connected Component")
+            if verbose:
+                show_digraph(new_Graph, "Strongly Connected Component")
             # subgraph of only weighted edges
             mfvs_graph = layer_graph.subgraph(mfvs)
             mfvs = list(reversed(list(nx.topological_sort(mfvs_graph))))
@@ -65,7 +69,8 @@ def optimal_sequence(Digraph):
                 new_Graph.remove_node(v)
             assert(nx.is_directed_acyclic_graph(new_Graph))
             rev_list = list(reversed(list(nx.topological_sort(new_Graph))))
-            print("Reverse Topological (without MFVS): " + str(rev_list))
+            if verbose:
+                print("Reverse Topological (without MFVS): " + str(rev_list))
             for item in rev_list:
                 action_sequence.append((item, 'g'))
             for v in mfvs:
